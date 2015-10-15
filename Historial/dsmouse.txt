@@ -1,0 +1,175 @@
+'********************************************************************************************
+'Documentation to the Standard DLL "dsmouse.dll"	 (c) 2001 by J. Thuemmler, Delphin Software
+'********************************************************************************************
+'+++++++++++++++++++++++  This DLL is Freeware and provided "As Is"  ++++++++++++++++++++++++
+'********************************************************************************************
+Purpose of the DLL:
+
+The DLL enables you to watch for mouse activities in foreign apps or system wide and
+- if desired - to block these activities. Therefore, either on the foreign app, or system
+wide will be installed a mouse hook, which may call a public function in your app. This
+callback function must have the following prototype:
+
+Public Function Callback&(ByVal msg&, ByVal hwnd&, ByVal X&, ByVal Y&, ByVal HTI&)
+
+The address of this function must be passed to "SetMouseHook()" in parameter "Address&" using
+the AddressOf-Operator.
+
+Besides, you can define up to 10 windows, which can be given to the DLL separately, and at
+the same time, you can decide whether to allow to let several mouse messages reach the
+destination window or not. To make these settings, use the functions "AddMouseWindow&()" 
+and RemoveMouseWindow()".
+
+For all the other mouse activities, you can define, how to let them go - use the function
+"SetDiscard()" to determine the way. You can change these settings by a new call of
+this function.
+
+The DLL is useful for analyzing and/or supressing the mouse activities either for the thread 
+of the window "hTarget&" or system wide, whereas you can select single windows.
+
+NOTE:
+A thread hook always has priority against a system hook. Equal hooks are inserted into the 
+hook chain according the time of installation. When an application uses a mouse hook itself, 
+it may be you don't get any messages, nor can you suppress any messages.
+'********************************************************************************************
+Function declaration:
+
+Declare Function SetMouseHook& Lib "dsmouse" (ByVal hTarget&, ByVal Address&)
+'--------------------------------------------------------------------------------------------
+Parameters:
+
+hTarget&
+hTarget& = hWnd&: The handle of the window, on the thread of which the hook should be 
+                  installed, or
+hTarget& = -1     for a system wide hook, or
+hTarget& = 0      to release the hook.
+
+Address&
+The address of a public function in your program, which must reside in a standard module and 
+will be called from the DLL, passed using "AddressOf Callback" (see above):
+
+Public Function Callback&(ByVal msg&, ByVal hwnd&, ByVal X&, ByVal Y&, ByVal HTI&)
+
+The following parameter are passed when the function is called:
+
+- msg&: 	Mouse message, e.g. WM_LBUTTONDOWN or WM_MOUSEMOVE,
+- hwnd&:	Target window for the mouse activity,
+- X&:			x-coordinate of cursor,
+- Y&: 		y-coordinate of cursor,
+- HTI&:		Hittest-Info (see SDK).
+
+NOTE:
+If you don't need a callback (e.g. for supressing mouse activities only), set 
+Address& = 0. Then you don't need to write this callback function.
+'--------------------------------------------------------------------------------------------
+Return value:
+
+1 (True), if the hook was installed or released successfully, otherwise 
+0 (False).
+'********************************************************************************************
+Function declaration:
+
+Declare Function SetMoveCallback& Lib "dsmouse" (ByVal Callback&)
+'--------------------------------------------------------------------------------------------
+Parameter:
+
+Callback& (0, 1; Default = 0):
+When Callback = 1, the callback function is called also on mouse move, 
+when Callback = 0 (Default) only on hitting mouse button.
+'--------------------------------------------------------------------------------------------
+Return value:
+
+Always 1 (True).
+'********************************************************************************************
+Function declaration:
+
+Declare Function AddMouseWindowLib "dsmouse" (ByVal hwnd&, ByVal Discard&, ByVal Thread&)
+'--------------------------------------------------------------------------------------------
+Parameter:
+
+hwnd&:
+Window handle
+
+Discard&:
+Determines, which mouse messages for the window or its thread should be suppressed according
+to the following rules:
+
+left mouse button; client = 1,
+left mouse button; non client = 2,
+right mouse button; client = 4,
+right mouse button; non client = 8,
+middle mouse button; client = 16,
+middle mouse button; non client = 32,
+mouse movement; client = 64,
+mouse movement; non client = 128.
+
+These values mye be combined in any way by use of the "Or"-operator.
+
+Thread& (0, 1):
+When Thread = 0, "Discard" is only valid for the window hwnd; on Thread = 1 for all windows 
+which belong to the same thread.
+
+NOTE:
+You can add up to 10 completely different windows, which must be able to receive mouse 
+messages (at least visible and enabled).   
+'--------------------------------------------------------------------------------------------
+Return value:
+
+True (1), when Discard& is in the range of 0 - 255, hwnd is valid and not yet registered, and
+the maximal possible number of 10 windows isn't reached yet, otherwise 
+False (0).
+'********************************************************************************************
+Function declaration:
+
+Declare Function RemoveMouseWindow& Lib  "dsmouse" (ByVal hwnd&)
+'--------------------------------------------------------------------------------------------
+Parameter:
+
+hwnd&:
+Handle of the window which should removed from the list created in "AddMouseWindow()".
+'--------------------------------------------------------------------------------------------
+Return value:
+
+True (1), when "hwnd" was found in the list an removed successfully, otherwise
+False (0).
+'********************************************************************************************
+Function declaration:
+
+Declare Function SetDiscard& Lib "dsmouse" (ByVal Discard&)
+'--------------------------------------------------------------------------------------------
+Parameter:
+
+Discard&:
+The same values as explained under "AddMouseWindow()" are valid.
+
+This parameter will take effect for all NOT in "AddMouseWindow()" explicitely passed windows
+rsp. threads, according to the hook type.
+You can call this function multiple times to change the parameter.
+'--------------------------------------------------------------------------------------------
+Return value:
+
+True (1), when Discard& is in the range of 0 - 255, otherwise
+False (0).
+'********************************************************************************************
+Delphin Software
+Mail:  delphinsoft@gmx.de
+Phone: 049 7251 18671
+Fax:   049 7251 989773
+'********************************************************************************************
+'********************************************************************************************
+Sample for supressing all the mouse activities for 10 seconds:
+
+Declare Function SetMouseHook& Lib "dsmouse" (Byval hTarget&, Byval Address&)
+Declare Function SetDiscard& Lib "dsmouse" (ByVal Discard&)
+Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds&)
+
+Sub Main
+Call SetMouseHook(-1, 0)
+Call SetDiscard(255)
+
+Sleep 10000
+
+Call SetDiscard(0)  '# Optional
+Call SetMouseHook(0, 0)
+End Sub
+'********************************************************************************************
