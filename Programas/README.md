@@ -11,3 +11,7 @@
 * Codigos fuente
 
 * Iconos, imagenes y archivos de configuracion de los programas
+
+* Programas compilados
+
+* Archivos de configuracion de los programas
